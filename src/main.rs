@@ -146,7 +146,38 @@ fn handle_opening_admission(
                 )
             }
         }
-        OvenDirection::Outgoing => {}
+        OvenDirection::Outgoing => {
+            #[derive(serde::Deserialize)]
+            struct ViewerQuery {
+                password: String,
+            }
+
+            let room = payload
+                .request
+                .url
+                .path_segments()
+                .with_context(|| format!("url '{:?}' has no segments", payload.request.url))?
+                .nth(1)
+                .with_context(|| {
+                    format!("url '{:?}' is laking a second segment", payload.request.url)
+                })?;
+
+            let query = payload
+                .request
+                .url
+                .query()
+                .context("no query parameters present")?;
+
+            let query = serde_urlencoded::from_str::<ViewerQuery>(query)?;
+            let expected_password = state
+                .rooms
+                .get(room)
+                .with_context(|| format!("room does not exist: {room}"))?;
+
+            if expected_password != &query.password {
+                anyhow::bail!("Password mismatch for room: {room}");
+            }
+        }
     }
 
     Ok(OvenOpeningResponse {
