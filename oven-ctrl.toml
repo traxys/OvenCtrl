@@ -1,0 +1,13 @@
+# Each value can be passed through environment variables
+
+external_host = "localhost:3333"
+external_tls = false
+
+[streamers]
+traxys = "1234" # Can be supplied with OVEN_CTRL_STREAMERS_traxys=1234
+
+[allowed_streams]
+traxys = ["foo", "stream"]
+
+[rooms]
+stream = "password" # Can be supplied with OVEN_CTRL_ROOMS_stream=password
