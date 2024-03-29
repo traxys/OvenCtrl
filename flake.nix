@@ -29,11 +29,12 @@
         RUST_DOC_PATH = "${rust}/share/doc/rust/html/std/index.html";
       };
 
-      defaultPackage = naersk'.buildPackage ./.;
+      packages.default = naersk'.buildPackage ./.;
     })
     // {
       nixosModules = {
         ome = import ./nixos/ome.nix;
+        ctrl = import ./nixos/ctrl.nix self;
       };
     };
 }
