@@ -4,7 +4,13 @@ use std::{
 };
 
 use anyhow::Context;
-use axum::{extract::State, routing::post, Json, Router};
+use axum::{
+    extract::State,
+    http::{HeaderMap, HeaderValue, StatusCode},
+    response::{Html, Redirect},
+    routing::{get, post},
+    Form, Json, Router,
+};
 use time::OffsetDateTime;
 use tower_http::trace::TraceLayer;
 use tracing::Level;
@@ -174,13 +180,46 @@ async fn admission(
 }
 
 #[derive(serde::Deserialize, Debug)]
+struct JoinForm {
+    room: String,
+    password: String,
+}
+
+#[tracing::instrument(skip(state))]
+async fn join(
+    state: State<Arc<OvenCtrlConfig>>,
+    form: Form<JoinForm>,
+) -> Result<Html<String>, Redirect> {
+    let Some(room_password) = state.rooms.get(&form.room) else {
+        tracing::warn!("Invalid room");
+        return Err(Redirect::to("/not_found.html"));
+    };
+
+    if room_password != &form.password {
+        tracing::warn!("Invalid password");
+        return Err(Redirect::to("/not_found.html"));
+    }
+
+    Ok(Html("TODO: Play stream".into()))
+}
+
+#[derive(serde::Deserialize, Debug)]
 struct OvenCtrlConfig {
     /// Streamer name to token
     #[serde(default)]
     streamers: HashMap<String, String>,
+    /// Stream room to room password
+    #[serde(default)]
+    rooms: HashMap<String, String>,
     /// Streamer name to allowed streams
     #[serde(default)]
     allowed_streams: HashMap<String, HashSet<String>>,
+}
+
+fn css_header() -> HeaderMap {
+    let mut css_header = HeaderMap::new();
+    css_header.insert("Content-Type", HeaderValue::from_static("text/css"));
+    css_header
 }
 
 #[tokio::main(flavor = "current_thread")]
@@ -203,6 +242,24 @@ async fn main() -> anyhow::Result<()> {
 
     let app = Router::new()
         .route("/oven/admission", post(admission))
+        .route("/join", post(join))
+        .route("/", get(|| async { Html(include_str!("login.html")) }))
+        .route(
+            "/not_found.html",
+            get(|| async { (StatusCode::NOT_FOUND, Html(include_str!("not_found.html"))) }),
+        )
+        .route(
+            "/dist/normalize.css",
+            get(|| async { (css_header(), include_str!("dist/normalize.css")) }),
+        )
+        .route(
+            "/dist/milligram.min.css",
+            get(|| async { (css_header(), include_str!("dist/milligram.min.css")) }),
+        )
+        .route(
+            "/dist/milligram.min.css.map",
+            get(|| async { include_str!("dist/milligram.min.css.map") }),
+        )
         .with_state(Arc::new(settings))
         .layer(TraceLayer::new_for_http());
 
