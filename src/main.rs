@@ -273,6 +273,7 @@ struct OvenCtrlConfig {
     #[serde(default = "default_port")]
     port: u16,
     external_host: String,
+    #[serde(default)]
     external_tls: bool,
     /// Streamer name to token
     #[serde(default)]
