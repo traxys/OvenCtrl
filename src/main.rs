@@ -200,11 +200,43 @@ async fn join(
         return Err(Redirect::to("/not_found.html"));
     }
 
-    Ok(Html("TODO: Play stream".into()))
+    Ok(Html(format!(
+        r#"
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width" />
+        <title>Room: {room}</title>
+    </head>
+    <body>
+        <div id="player_id"></div>
+        <script src="dist/ovenplayer.js"></script>
+        <script>
+            const player = OvenPlayer.create('player_id', {{
+                sources: [
+                    {{
+                        label: "label_for_webrtc",
+                        type: "webrtc",
+                        file: "ws{tls}://{host}/app/{room}?password={password}"
+                    }}
+                ]
+            }})
+        </script>
+    </body>
+</html>
+        "#,
+        host = &state.external_host,
+        room = &form.room,
+        password = &form.password,
+        tls = if state.external_tls { "s" } else { "" },
+    )))
 }
 
 #[derive(serde::Deserialize, Debug)]
 struct OvenCtrlConfig {
+    external_host: String,
+    external_tls: bool,
     /// Streamer name to token
     #[serde(default)]
     streamers: HashMap<String, String>,
@@ -259,6 +291,19 @@ async fn main() -> anyhow::Result<()> {
         .route(
             "/dist/milligram.min.css.map",
             get(|| async { include_str!("dist/milligram.min.css.map") }),
+        )
+        .route(
+            "/dist/ovenplayer.js",
+            get(|| async {
+                let mut js_header = HeaderMap::new();
+                js_header.insert("Content-Type", HeaderValue::from_static("text/javascript"));
+
+                (js_header, include_str!("dist/ovenplayer.js"))
+            }),
+        )
+        .route(
+            "/dist/ovenplayer.js.map",
+            get(|| async { include_str!("dist/ovenplayer.js.map") }),
         )
         .with_state(Arc::new(settings))
         .layer(TraceLayer::new_for_http());
