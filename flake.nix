@@ -29,7 +29,10 @@
         RUST_DOC_PATH = "${rust}/share/doc/rust/html/std/index.html";
       };
 
-      packages.default = naersk'.buildPackage ./.;
+      packages.default = naersk'.buildPackage {
+        src = ./.;
+        meta.mainProgram = "oven-ctrl";
+      };
     })
     // {
       nixosModules = {
