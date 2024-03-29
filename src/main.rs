@@ -264,8 +264,14 @@ async fn join(
     )))
 }
 
+fn default_port() -> u16 {
+    3000
+}
+
 #[derive(serde::Deserialize, Debug)]
 struct OvenCtrlConfig {
+    #[serde(default = "default_port")]
+    port: u16,
     external_host: String,
     external_tls: bool,
     /// Streamer name to token
@@ -303,6 +309,8 @@ async fn main() -> anyhow::Result<()> {
         .build()?
         .try_deserialize::<OvenCtrlConfig>()?;
 
+    let port = settings.port;
+
     let app = Router::new()
         .route("/oven/admission", post(admission))
         .route("/join", post(join))
@@ -339,7 +347,7 @@ async fn main() -> anyhow::Result<()> {
         .with_state(Arc::new(settings))
         .layer(TraceLayer::new_for_http());
 
-    let listener = tokio::net::TcpListener::bind(("0.0.0.0", 3000)).await?;
+    let listener = tokio::net::TcpListener::bind(("0.0.0.0", port)).await?;
 
     tracing::info!("Starting oven-ctrl");
 
