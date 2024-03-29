@@ -197,7 +197,7 @@ async fn main() -> anyhow::Result<()> {
         .add_source(config::File::with_name(
             &std::env::args().nth(1).context("Missing configuration")?,
         ))
-        .add_source(config::Environment::with_prefix("OVEN_CTRL"))
+        .add_source(config::Environment::with_prefix("OVEN_CTRL").separator("_"))
         .build()?
         .try_deserialize::<OvenCtrlConfig>()?;
 
