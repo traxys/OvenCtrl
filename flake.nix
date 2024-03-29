@@ -30,5 +30,10 @@
       };
 
       defaultPackage = naersk'.buildPackage ./.;
-    });
+    })
+    // {
+      nixosModules = {
+        ome = import ./nixos/ome.nix;
+      };
+    };
 }
